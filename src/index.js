@@ -2,100 +2,138 @@ import React from 'react';
 import ReactDom from 'react-dom';
 import './index.css'
 
-const scaleNames = {
-  c: 'Celsius',
-  f: 'Fahrenheit'
-}
-
-class TemperatureInput extends React.Component {
+class SearchBar extends React.Component {
   constructor(props) {
     super(props);
 
-    //binding
-    this.handleChange = this.handleChange.bind(this);
+    //bind
+    this.handleSelect = this.handleSelect.bind(this);
   }
-
-  handleChange(e) {
-    this.props.onTeamperatureChange(e.target.value);
+  handleSelect(e) {
+    this.props.onSelect()
   }
-
   render() {
-    const temperature = this.props.temperature;
-    const scale = this.props.scale;
-
     return (
-      <fieldset>
-        <legend>Enter temperature in {scaleNames[scale]}:</legend>
-        <input
-          value={temperature}
-          onChange={this.handleChange} />
-
-        <BoilingVerdict celsius={parseFloat(temperature)} />
-      </fieldset>
+      <form>
+        <input type='text' placeholder="Search..."/>
+        <p>
+          <input type='checkbox' onClick={this.handleSelect}/>
+          {' '} Only show products in stock 
+          </p>
+      </form>
     )
   }
 }
 
-function BoilingVerdict(props) {
-  if (props.celsius >= 100)
-    return <p>The water would boil.</p>;
-  
-  return <p>The water would not boil.</p>;
+class ProductCategoryRow extends React.Component {
+  render() {
+    return (
+      <tr>
+        <th colSpan="2">{this.props.category}</th>
+      </tr>
+    )
+  }
 }
 
-class Calculator extends React.Component {
+class ProductRow extends React.Component {
+  render() {
+    const product = this.props.product;
+    const name = product.stocked ? product.name : 
+      <span style={{color: 'red'}}> {product.name} </span>
+
+    return(
+      <tr>
+        <td>{name} </td>
+        <td>{product.price}</td>
+      </tr>
+    )
+  }
+}
+
+class ProductTable extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      celsius: '',
-      fahrenheit: ''
-    }
-
-    //bind
-    this.handleCelsius = this.handleCelsius.bind(this);
-    this.handleFahrenheit = this.handleFahrenheit.bind(this);
-  }
-
-  handleCelsius(celsius) {
-    const fahrenheit = tryConvert(celsius, toFahrenheit);
-    this.setState({ celsius, fahrenheit });
-  }
-
-  handleFahrenheit(fahrenheit) {
-    const celsius = tryConvert(fahrenheit, toCelsius);
-    this.setState({ celsius, fahrenheit });
   }
 
   render() {
+    //build rows
+    const products = this.props.products;
+    const inStockOnly = this.props.inStockOnly;
+    console.log('isStockOnly', inStockOnly);
+
+    let rows = [], lastCategory = null;
+    products.forEach(function(product) {
+      if (lastCategory !== product.category) {
+        lastCategory = product.category;
+        
+        rows.push(
+          <ProductCategoryRow 
+            category={product.category} 
+            key={product.category}
+          />
+        )
+      }
+      
+      if (this.props.inStockOnly && !product.stocked)
+        return;
+
+      rows.push(
+        <ProductRow product={product}/>
+      )
+    }, this); 
+
     return (
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Price</th>
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+    )
+  }
+}
+
+class FilterableProductTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      inStockOnly: false
+    }
+
+    //bind
+    this.handleSearchBar = this.handleSearchBar.bind(this);
+  }
+
+  handleSearchBar() {
+    this.setState(prevState => ({
+      inStockOnly: !prevState.inStockOnly
+    }))
+
+    console.log('search bar change', this.state.inStockOnly);
+  }
+
+  render() {
+    return(
       <div>
-        <TemperatureInput onTeamperatureChange={this.handleCelsius} scale="c" temperature={this.state.celsius}/>
-        <br/><br/>
-        <TemperatureInput onTeamperatureChange={this.handleFahrenheit} scale="f" temperature={this.state.fahrenheit}/>
+        <SearchBar onSelect={this.handleSearchBar}/>
+        <ProductTable products={this.props.products} inStockOnly={this.state.inStockOnly}/>
       </div>
     )
   }
 }
 
+const PRODUCTS = [
+  {category: 'Sporting Goods', price: '$49.99', stocked: true, name: 'Football'},
+  {category: 'Sporting Goods', price: '$9.99', stocked: true, name: 'Baseball'},
+  {category: 'Sporting Goods', price: '$29.99', stocked: false, name: 'Basketball'},
+  {category: 'Electronics', price: '$99.99', stocked: true, name: 'iPod Touch'},
+  {category: 'Electronics', price: '$399.99', stocked: false, name: 'iPhone 5'},
+  {category: 'Electronics', price: '$199.99', stocked: true, name: 'Nexus 7'}
+];
+
 ReactDom.render(
-  <Calculator />,
+  <FilterableProductTable products={PRODUCTS} />,
   document.getElementById('root')
-);
-
-function toCelsius(fahrenheit) {
-  return (fahrenheit - 32) * 5 / 9;
-}
-
-function toFahrenheit(celsius) {
-  return (celsius * 9 / 5) + 32;
-}
-
-function tryConvert(temperature, convert) {
-  const input = parseFloat(temperature);
-  if (Number.isNaN(input)) {
-    return '';
-  }
-  const output = convert(input);
-  const rounded = Math.round(output * 1000) / 1000;
-  return rounded.toString();
-}
+)
