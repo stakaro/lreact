@@ -1,6 +1,6 @@
 import React from 'react'
 
-import FilterLink from '../containers/FilterLink'
+import FilterLink from './FilterLink'
 
 const Footer = () => (
   <p>
