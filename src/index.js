@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDom from 'react-dom';
+import { render } from 'react-dom';
 import { Provider } from 'react-redux'
 import { createStore } from 'redux'
 
@@ -10,7 +10,7 @@ import './index.css'
 
 let store = createStore(todoApp)
 
-ReactDom.render(
+render(
   <Provider store={store}>
     <App />
   </Provider>,
